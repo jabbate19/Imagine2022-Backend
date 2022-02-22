@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 out.json
+test_params.json

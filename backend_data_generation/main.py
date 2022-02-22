@@ -8,25 +8,14 @@ import threading
 import time
 from argparse import ArgumentParser
 import hashlib
+from geopy.distance import geodesic
 
 def generate_mac():
     return ":".join("%02x" % random.randint(0, 255) for x in range(6))
 
 
 def get_distance(pos1, pos2):  # The haversine function
-    """
-    Get meter distance between lat/lon 1 and lat/lon 2
-    https://stackoverflow.com/questions/639695/how-to-convert-latitude-or-longitude-to-meters - JS implementation
-    """
-    R = 6378.137  # Radius of the earth in KM
-    dlat = pos2[0] * math.pi / 180 - pos1[0] * math.pi / 180
-    dlon = pos2[1] * math.pi / 180 - pos1[1] * math.pi / 180
-    a = math.pow(math.sin(dlat / 2), 2) + math.cos(pos1[0] * math.pi / 180) * math.cos(
-        pos2[0] * math.pi / 180
-    ) * math.pow(math.sin(dlon / 2), 2)
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    d = R * c
-    return abs(d * 1000)  # Meters
+    return geodesic(pos1, pos2).meters
 
 
 class Geofence:
@@ -58,10 +47,10 @@ class Geofence:
 
 # Smol area for testing
 GEOFENCE = Geofence(
-    (43.087631, -77.679164),
-    (43.087689, -77.674476),
-    (43.084588, -77.674325),
-    (43.083906, -77.679396)
+    (43.085114, -77.675495),
+    (43.085141, -77.673258),
+    (43.083757, -77.673344),
+    (43.083757, -77.673344)
 )
 
 # Formula: 10 ^ ((Measured Power – RSSI)/(10 * N))
@@ -180,7 +169,7 @@ class ESP:
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--esp", type=int, default=30)
+    parser.add_argument("--esp", type=int, default=50)
     parser.add_argument("--beacon", type=int, default=150)
     parser.add_argument("--time", type=int, default=120)
     parser.add_argument("--sweep", type=float, default=1)

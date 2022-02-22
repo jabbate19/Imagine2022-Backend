@@ -1,0 +1,4 @@
+pymongo
+fastapi
+geopy
+geographiclib
