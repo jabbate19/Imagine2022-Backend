@@ -15,6 +15,8 @@ with open("test_params.json", "r") as f:
 
 T = Triangulator(*data["args"], **data["kwargs"])
 
-dat = T.aggregate(data["start_time"], bounds=2.5)
+dat = T.aggregate(data["start_time"], bounds=2)
 print("\n".join([f"{k}: {v['position']}: {dist(v['position'], v['testpos'])} meter error" for k, v in dat.items()]))
-print(len(dat))
+errors = [dist(v['position'], v['testpos']) for v in dat.values()]
+print(f"Average Error: {sum(errors) / len(errors)} meters")
+print(f"Min/Max Error: {min(errors)} meters / {max(errors)} meters")
