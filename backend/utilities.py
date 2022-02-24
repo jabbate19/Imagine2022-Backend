@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from geopy.distance import geodesic
 from triangulator import geo_triangulate, LatLong
 import math
+import logging
 
 
 class Triangulator:
@@ -10,6 +11,7 @@ class Triangulator:
         environmental_value: float,  # Environmental factor of RIT (should be between 2 and 5 i think, but we can derive it later)
         one_meter_rssi: float,  # RSSI of a beacon one meter from an ESP
         zero_zero: list[float],  # lat/lon position of (0, 0) to use as normalization
+        mongo_client: MongoClient = None,
         mongo_host: str = "mongodb://tide.csh.rit.edu",  # MongoDB host
         mongo_user: str = None,  # MongoDB user
         mongo_password: str = None,  # MongoDB password
@@ -24,12 +26,15 @@ class Triangulator:
         self.MEASURED_VALUE = one_meter_rssi
         self.zero_zero = zero_zero
 
-        self.client = MongoClient(
-            host=mongo_host + "/" + mongo_database,
-            username=mongo_user,
-            password=mongo_password,
-            tls=mongo_ssl,
-        )
+        if mongo_client:
+            self.client = mongo_client
+        else:
+            self.client = MongoClient(
+                host=mongo_host + "/" + mongo_database,
+                username=mongo_user,
+                password=mongo_password,
+                tls=mongo_ssl,
+            )
         self.database = self.client[mongo_database]
 
         self.frames_collection = self.database[mongo_frames_collection]
@@ -90,7 +95,7 @@ class Triangulator:
             ][
                 "esps"
             ].keys():
-                beacons[frame["bid"]]["esps"][frame["eid"]] = {
+                beacons[frame["bid"]]["esps"][str(frame["eid"])] = {
                     "timestamp": frame["time"],
                     "rssi": frame["rssi"],
                     "esp_position": self.esps[frame["eid"]],
@@ -164,3 +169,13 @@ class Triangulator:
             )
 
         return findable_beacons
+    
+    def run_once(self, timestamp: float, bounds: float = 5):
+        beacons = self.aggregate(timestamp, bounds=bounds)
+        for b in beacons.keys():
+            try:
+                doc = beacons[b]
+                doc["beacon_id"] = b
+                self.output_collection.replace_one({"beacon_id": b}, doc, upsert=True)
+            except:
+                logging.exception("Error in triangulation upload")
