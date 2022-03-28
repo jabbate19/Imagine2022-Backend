@@ -69,6 +69,9 @@ class Triangulator:
         return (lat - self.zero_zero[0]) * self.lat_con, (
             lon - self.zero_zero[1]
         ) * self.lon_con
+    
+    def _get_unnormalized_point(self, lat: float, lon: float) -> list[float]:
+        return lat / self.lat_con + self.zero_zero[0], lon / self.lon_con + self.zero_zero[1]
 
     def _get_findable_beacons(self, timestamp, bounds):
         beacons = {}
@@ -78,6 +81,7 @@ class Triangulator:
             if not frame["bid"] in beacons.keys():
                 beacons[frame["bid"]] = {
                     "position": None,
+                    "absolute_position": None,
                     "esps": {},
                     "testpos": self._get_normalized_point(*frame["_test_bpos"])
                     if self.test
@@ -156,7 +160,7 @@ class Triangulator:
             reverse=True,
         )
         if len(vals) > 0:
-            return tuple(vals[0][:2])
+            return tuple(vals[0][:2]), self._get_unnormalized_point(*tuple(vals[0][:2]))
         else:
             return None
 
@@ -164,7 +168,7 @@ class Triangulator:
         findable_beacons = self._get_findable_beacons(timestamp, bounds)
 
         for b in findable_beacons.keys():
-            findable_beacons[b]["position"] = self._calc_position(
+            findable_beacons[b]["position"], findable_beacons[b]["absolute_position"] = self._calc_position(
                 findable_beacons[b], 2.5
             )
 
