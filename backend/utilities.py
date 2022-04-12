@@ -76,10 +76,10 @@ class Triangulator:
     def _get_findable_beacons(self, timestamp, bounds):
         beacons = {}
         for frame in self.frames_collection.find(
-            filter={"time": {"$lt": timestamp + bounds, "$gt": timestamp - bounds}}
+            filter={"timestamp": {"$lt": timestamp + bounds, "$gt": timestamp - bounds}}
         ):
-            if not frame["bid"] in beacons.keys():
-                beacons[frame["bid"]] = {
+            if not frame["macaddr"] in beacons.keys():
+                beacons[frame["macaddr"]] = {
                     "position": None,
                     "absolute_position": None,
                     "esps": {},
@@ -89,22 +89,22 @@ class Triangulator:
                 }
 
             if (  # Giant condition to check if the new frame is more recent than an old one, if an old one exists
-                frame["eid"] in beacons[frame["bid"]]["esps"].keys()
-                and beacons[frame["bid"]]["esps"][frame["eid"]]["timestamp"]
-                < frame["time"]
+                frame["sniffaddr"] in beacons[frame["macaddr"]]["esps"].keys()
+                and beacons[frame["macaddr"]]["esps"][frame["sniffaddr"]]["timestamp"]
+                < frame["timestamp"]
             ) or not frame[
-                "eid"
+                "sniffaddr"
             ] in beacons[
-                frame["bid"]
+                frame["macaddr"]
             ][
                 "esps"
             ].keys():
-                beacons[frame["bid"]]["esps"][str(frame["eid"])] = {
-                    "timestamp": frame["time"],
+                beacons[frame["macaddr"]]["esps"][str(frame["sniffaddr"])] = {
+                    "timestamp": frame["timestamp"],
                     "rssi": frame["rssi"],
-                    "esp_position": self.esps[frame["eid"]],
+                    "esp_position": self.esps[frame["sniffaddr"]],
                     "esp_position_normal": self._get_normalized_point(
-                        *self.esps[frame["eid"]]
+                        *self.esps[frame["sniffaddr"]]
                     ),
                     "distance": self._calc_distance(frame["rssi"]),
                 }
