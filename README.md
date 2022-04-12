@@ -7,7 +7,8 @@ Imagine, nay, CONSIDER RIT
 ```json
 {
   "beacon id": {
-    "position": [x, y] // Normalized position in meters (turns out this doesn't give GPS coord anymore, will fix @spencer
+    "position": [x, y], // Normalized position in meters
+    "absolute_position": [lat, lon], // GPS position of beacon
     "esps": {
       "esp id": {
         "timestamp": float unix time,
