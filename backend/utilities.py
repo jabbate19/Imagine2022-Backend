@@ -186,3 +186,6 @@ class Triangulator:
     
     def add_esp(self, pos, id):
         self.esp_collection.insert_one({"id": id, "position": pos})
+        
+    def remove_esp(self, id):
+        self.esp_collection.remove_one({"id": id})

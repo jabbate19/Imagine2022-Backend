@@ -60,7 +60,12 @@ async def get_beacons():
 async def get_zero():
     return triangulator.zero_zero
 
-@app.get("/esp")
+@app.post("/esp")
 async def new_esp(id: str, lat: str, lon: str):
     triangulator.add_esp([float(lat), float(lon)], id)
+    return {}
+
+@app.post("/remove/esp")
+async def new_esp(id: str):
+    triangulator.remove_esp(id)
     return {}
