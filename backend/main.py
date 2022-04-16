@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from pymongo.collection import Collection
-from fastapi import FastAPI, Response, Request
+from fastapi import FastAPI, Response, Request, status
 from fastapi_restful.tasks import repeat_every
 import os
 import time
@@ -51,21 +51,21 @@ TIME_OVERRIDE: float = float(_ovr) if _ovr != "no" else False
 def update_beacon_positions():
     triangulator.run_once(TIME_OVERRIDE if TIME_OVERRIDE else (time.time() - 2.5), bounds=2.5)
 
-@app.get("/beacons/locations")
+@app.get("/beacons/locations", status_code=200)
 async def get_beacons():
     res = output.find()
     return {i["beacon_id"]: {k: v for k, v in i.items() if not k in ["_id", "testpos"]} for i in res}
 
-@app.get("/config/zero")
+@app.get("/config/zero", status_code=200)
 async def get_zero():
     return triangulator.zero_zero
 
-@app.post("/esp")
+@app.post("/esp", status_code=201)
 async def new_esp(id: str, lat: str, lon: str):
     triangulator.add_esp([float(lat), float(lon)], id)
     return {}
 
-@app.post("/remove/esp")
-async def new_esp(id: str):
-    triangulator.remove_esp(id)
+@app.post("/remove/esp", status_code=200)
+async def remove_esp(id: str, response: Response):
+    response.status_code = 200 if triangulator.remove_esp(id) else 404
     return {}
