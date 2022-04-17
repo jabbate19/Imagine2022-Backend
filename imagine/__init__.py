@@ -1,4 +1,5 @@
 from flask import Flask, abort, request
+from flask_cors import CORS
 import os
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -7,6 +8,7 @@ import time
 from _thread import *
 
 app = Flask(__name__)
+CORS(app)
 
 if os.path.exists(os.path.join(os.getcwd(), "config.py")):
     app.config.from_pyfile(os.path.join(os.getcwd(), "config.py"))
