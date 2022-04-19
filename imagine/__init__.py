@@ -40,6 +40,9 @@ output: Collection = mongo[app.config["MONGO_DB"]][
 command: Collection = mongo[app.config["MONGO_DB"]][
     app.config["MONGO_COMMAND_COLLECTION"]
 ]
+beacons: Collection = mongo[app.config["MONGO_DB"]][
+    app.config["MONGO_BEACON_COLLECTION"]
+]
 
 triangulator = Triangulator(
     app.config["TRIANGULATION_ENV_FACTOR"],
@@ -60,16 +63,21 @@ def verify_token(token):
     if token in tokens:
         return tokens[token]
 
-@app.route('/sugma', methods=['GET'])
-def update():
-    if triangulator.run_once(TIME_OVERRIDE if TIME_OVERRIDE else (time.time() - 2.5), bounds=2.5):
-        return "OK", 200
-    return "FUCK", 500
-
 @app.route('/beacons/locations', methods=['GET'])
 def locations():
     res = output.find()
-    return {i["beacon_id"]: {k: v for k, v in i.items() if not k in ["_id", "testpos"]} for i in res}
+    out = {}
+    for i in res:
+        beacon_id = i["beacon_id"]
+        beacon_find = beacons.find({"id": beacon_id})
+        beacon_hidden = True
+        for bool in beacon_find:
+            if not bool["hidden"]:
+                beacon_hidden = False
+                break
+        if not beacon_hidden:
+            out[beacon_id] = {k: v for k, v in i.items() if not k in ["_id", "testpos"]}
+    return out
 
 @app.route("/config/zero", methods=['GET'])
 def get_zero():
@@ -96,6 +104,22 @@ def remove_esp():
     if result:
         return "OK", 200
     return "ESP Not Found", 400
+
+@app.route("/hide", methods=['POST'])
+@auth.login_required
+def hide_beacon():
+    args = request.args
+    id = args.get("id")
+    beacons.update_one({"id": id}, {"$set": {"hidden": True}})
+    return "OK", 200
+
+@app.route("/unhide", methods=['POST'])
+@auth.login_required
+def unhide_beacon():
+    args = request.args
+    id = args.get("id")
+    beacons.update_one({"id": id}, {"$set": {"hidden": False}})
+    return "OK", 200
 
 def update_constant():
     while True:
