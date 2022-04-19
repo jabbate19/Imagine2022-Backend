@@ -1,5 +1,6 @@
 from flask import Flask, abort, request
 from flask_cors import CORS
+from flask_httpauth import HTTPTokenAuth
 import os
 from pymongo import MongoClient
 from pymongo.collection import Collection
@@ -8,12 +9,17 @@ import time
 from _thread import *
 
 app = Flask(__name__)
+auth = HTTPTokenAuth(scheme='Bearer')
 CORS(app)
 
 if os.path.exists(os.path.join(os.getcwd(), "config.py")):
     app.config.from_pyfile(os.path.join(os.getcwd(), "config.py"))
 else:
     app.config.from_pyfile(os.path.join(os.getcwd(), "config.env.py"))
+
+tokens = {
+    app.config["ADMIN_TOKEN"]: "admin",
+}
 
 mongo = MongoClient(
     host=f'{app.config["MONGO_HOST"]}/{app.config["MONGO_DB"]}',
@@ -49,6 +55,11 @@ triangulator = Triangulator(
 _ovr = os.environ.get("TRIANGULATION_TIMESTAMP_OVERRIDE", default="no")
 TIME_OVERRIDE: float = float(_ovr) if _ovr != "no" else False
 
+@auth.verify_token
+def verify_token(token):
+    if token in tokens:
+        return tokens[token]
+
 @app.route('/sugma', methods=['GET'])
 def update():
     if triangulator.run_once(TIME_OVERRIDE if TIME_OVERRIDE else (time.time() - 2.5), bounds=2.5):
@@ -65,24 +76,26 @@ def get_zero():
     return triangulator.zero_zero
 
 @app.route("/esp", methods=['POST'])
+@auth.login_required
 def new_esp():
     args = request.args
     id = args.get("id")
     lat = args.get("lat")
     lon = args.get("lon")
     if not (id and lat and lon):
-        abort(404)
+        abort(400)
     triangulator.add_esp([float(lat), float(lon)], id)
     return "OK", 200
 
 @app.route("/remove/esp", methods=['POST'])
+@auth.login_required
 def remove_esp():
     args = request.args
     id = args.get("id")
     result = triangulator.remove_esp(id)
     if result:
         return "OK", 200
-    return "Not Found", 404
+    return "ESP Not Found", 400
 
 def update_constant():
     while True:
