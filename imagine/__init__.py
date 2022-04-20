@@ -6,6 +6,8 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from imagine.utilities import Triangulator
 import time
+import datetime
+import pytz
 from _thread import *
 
 app = Flask(__name__)
@@ -43,6 +45,9 @@ command: Collection = mongo[app.config["MONGO_DB"]][
 beacons: Collection = mongo[app.config["MONGO_DB"]][
     app.config["MONGO_BEACON_COLLECTION"]
 ]
+heartbeats: Collection = mongo[app.config["MONGO_DB"]][
+    app.config["MONGO_HEARTBEAT_COLLECTION"]
+]
 
 triangulator = Triangulator(
     app.config["TRIANGULATION_ENV_FACTOR"],
@@ -77,6 +82,27 @@ def locations():
                 break
         if not beacon_hidden:
             out[beacon_id] = {k: v for k, v in i.items() if not k in ["_id", "testpos"]}
+    return out
+
+@app.route('/beacons/heartbeat', methods=['GET'])
+def get_heartbeats():
+    args = request.args
+    id = args.get("id")
+    if id:
+        res = heartbeats.find({"sniffaddr": id})
+    else:
+        res = heartbeats.find()
+    out = {}
+    for i in res:
+        addr = i["sniffaddr"]
+        if addr in out:
+            if i["timestamp"] > out[addr]:
+                out[addr] = i["timestamp"]
+        else:
+            out[addr] = i["timestamp"]
+    for key in out:
+        timestamp = datetime.datetime.fromtimestamp(out[key]-14400)
+        out[key] = timestamp.strftime("%m/%d/%Y %H:%M:%S")
     return out
 
 @app.route("/config/zero", methods=['GET'])
