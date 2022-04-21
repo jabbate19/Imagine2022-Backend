@@ -105,9 +105,9 @@ def get_heartbeats():
         out[key] = timestamp.strftime("%m/%d/%Y %H:%M:%S")
     return out
 
-@app.route("/config/zero", methods=['GET'])
-def get_zero():
-    return triangulator.zero_zero
+# @app.route("/config/zero", methods=['GET'])
+# def get_zero():
+#     return triangulator.zero_zero
 
 @app.route("/esp", methods=['POST'])
 @auth.login_required
