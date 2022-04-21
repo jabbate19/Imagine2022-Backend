@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from geopy.distance import geodesic
-from triangulator import geo_triangulate, LatLong
+from imagine.triangulator import geo_triangulate, LatLong
 import math
 import logging
 
@@ -183,6 +183,8 @@ class Triangulator:
                 self.output_collection.replace_one({"beacon_id": b}, doc, upsert=True)
             except:
                 logging.exception("Error in triangulation upload")
+                return False
+        return True
     
     def add_esp(self, pos, id):
         self.esp_collection.insert_one({"id": id, "position": pos})

@@ -1,6 +1,0 @@
-pymongo
-fastapi
-geopy
-geographiclib
-uvicorn
-fastapi-restful
